@@ -74,69 +74,50 @@ def main():
     start = (5, 5)
     goal = (45, 45)
 
-    # Set vortex strength
     set_strength(5)
 
-    # Create obstacle map
+    # ----- Define obstacle map FIRST -----
     obstacle_map = np.zeros((height, width))
 
-    # Vertical wall obstacle
     for y in range(10, 40):
         obstacle_map[y][25] = 1
 
-    # -------- Shortest Path Planner --------
-    planner1 = AStarPlanner(width, height, get_current, obstacle_map)
-    planner1.use_energy = False
-    shortest_path = planner1.plan(start, goal)
+    # ----- Weighted A* Experiment -----
+    alpha_values = [0.5, 1, 2, 3, 5]
+    energy_results = []
 
-    # -------- Energy Optimal Planner --------
-    planner2 = AStarPlanner(width, height, get_current, obstacle_map)
-    planner2.use_energy = True
-    energy_path = planner2.plan(start, goal)
+    for a in alpha_values:
 
-    # -------- Compute Metrics --------
-    E_shortest = compute_path_energy(shortest_path, get_current)
-    E_energy = compute_path_energy(energy_path, get_current)
+        print("Running alpha =", a)
 
-    L_shortest = compute_path_length(shortest_path)
-    L_energy = compute_path_length(energy_path)
+        planner = AStarPlanner(width, height, get_current, obstacle_map)
+        planner.use_energy = True
+        planner.alpha = a
 
-    percent_saved = (E_shortest - E_energy) / E_shortest * 100
+        path = planner.plan(start, goal)
 
-    print("\n------ FLOW + OBSTACLE ANALYSIS ------")
-    print(f"Shortest Path Energy: {E_shortest:.2f} J")
-    print(f"Energy-Optimal Path Energy: {E_energy:.2f} J")
-    print(f"Energy Saved: {percent_saved:.2f}%\n")
+        if path is None:
+            print("No path found for alpha =", a)
+            energy_results.append(float('inf'))
+            continue
 
-    print(f"Shortest Path Length: {L_shortest:.2f}")
-    print(f"Energy-Optimal Path Length: {L_energy:.2f}")
+        print("Path computed")
 
-    # -------- Plot --------
-    x_short = [p[0] for p in shortest_path]
-    y_short = [p[1] for p in shortest_path]
+        E = compute_path_energy(path, get_current)
+        print("Energy computed")
 
-    x_energy = [p[0] for p in energy_path]
-    y_energy = [p[1] for p in energy_path]
+        energy_results.append(E)
 
-    plt.figure(figsize=(8,8))
+        print(f"Alpha {a}: Energy = {E:.2f}")
 
-    # Plot obstacle cells
-    for y in range(height):
-        for x in range(width):
-            if obstacle_map[y][x] == 1:
-                plt.scatter(x, y, color='black', s=10)
 
-    plt.plot(x_short, y_short, 'b--', label='Shortest Path')
-    plt.plot(x_energy, y_energy, 'r-', linewidth=2, label='Energy-Optimal Path')
-
-    plt.scatter(start[0], start[1], color='green', s=100, label='Start')
-    plt.scatter(goal[0], goal[1], color='purple', s=100, label='Goal')
-
+    # ----- Plot Results -----
+    plt.figure()
+    plt.plot(alpha_values, energy_results, marker='o')
+    plt.xlabel("Heuristic Weight (alpha)")
+    plt.ylabel("Total Energy (J)")
+    plt.title("Effect of Heuristic Weight on Energy Optimality")
     plt.grid(True)
-    plt.legend()
-    plt.title("Flow + Geometry Interaction")
     plt.show()
-
-
 if __name__ == "__main__":
     main()

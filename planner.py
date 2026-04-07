@@ -10,6 +10,8 @@ class AStarPlanner:
         self.height = height
         self.get_current = ocean_func
         self.obstacle_map = obstacle_map
+        self.alpha = 1.0  # heuristic weight
+
 
         self.speed = 1.0
         self.rho = 1025
@@ -100,7 +102,8 @@ class AStarPlanner:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
 
-                    f_score = tentative_g + self.heuristic(neighbor, goal)
+                    f_score = tentative_g + self.alpha * self.heuristic(neighbor, goal)
+
                     heapq.heappush(open_set, (f_score, neighbor))
 
         return None
