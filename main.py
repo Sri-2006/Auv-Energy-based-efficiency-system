@@ -1,12 +1,76 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.animation as animation
 
 from planner import AStarPlanner
 from ocean import get_current, set_strength
 
 
 # -------------------------------------------------
-# Compute total energy of a given path
+# FLOW FIELD VISUALIZATION
+# -------------------------------------------------
+def plot_flow_field(ax, get_current):
+
+    X, Y = np.meshgrid(range(0, 50, 2), range(0, 50, 2))
+    U = np.zeros_like(X, dtype=float)
+    V = np.zeros_like(Y, dtype=float)
+
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            u, v = get_current(X[i][j], Y[i][j])
+            U[i][j] = u
+            V[i][j] = v
+
+    ax.quiver(X, Y, U, V, color='gray', alpha=0.6)
+
+
+# -------------------------------------------------
+# ANIMATION FUNCTION (FIXED)
+# -------------------------------------------------
+def animate_path(path):
+
+    fig, ax = plt.subplots()
+
+    # Plot flow field FIRST
+    plot_flow_field(ax, get_current)
+
+    x = [p[0] for p in path]
+    y = [p[1] for p in path]
+
+    line, = ax.plot([], [], 'b-', linewidth=2)
+    point, = ax.plot([], [], 'ro')
+
+    # Start & Goal
+    ax.scatter(x[0], y[0], c='green', s=100, label='Start')
+    ax.scatter(x[-1], y[-1], c='red', s=100, label='Goal')
+
+    ax.set_xlim(0, 50)
+    ax.set_ylim(0, 50)
+    ax.set_title("AUV Path Animation with Ocean Currents")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.grid()
+    ax.legend()
+
+    def update(frame):
+        line.set_data(x[:frame+1], y[:frame+1])
+        point.set_data(x[frame], y[frame])
+        return line, point
+
+    ani = animation.FuncAnimation(
+        fig,
+        update,
+        frames=len(path),
+        interval=80,
+        blit=False,
+        repeat=False
+    )
+
+    plt.show()
+
+
+# -------------------------------------------------
+# ENERGY COMPUTATION
 # -------------------------------------------------
 def compute_path_energy(path, ocean_func):
 
@@ -49,22 +113,7 @@ def compute_path_energy(path, ocean_func):
 
 
 # -------------------------------------------------
-# Compute geometric path length
-# -------------------------------------------------
-def compute_path_length(path):
-
-    total_length = 0
-
-    for i in range(len(path) - 1):
-        dx = path[i+1][0] - path[i][0]
-        dy = path[i+1][1] - path[i][1]
-        total_length += np.sqrt(dx**2 + dy**2)
-
-    return total_length
-
-
-# -------------------------------------------------
-# Main
+# MAIN FUNCTION
 # -------------------------------------------------
 def main():
 
@@ -76,16 +125,20 @@ def main():
 
     set_strength(5)
 
-    # ----- Define obstacle map FIRST -----
+    # Obstacle
     obstacle_map = np.zeros((height, width))
-
     for y in range(10, 40):
         obstacle_map[y][25] = 1
 
-    # ----- Weighted A* Experiment -----
+    # Alpha values
     alpha_values = [0.5, 1, 2, 3, 5]
-    energy_results = []
 
+    paths = []
+    energies = []
+
+    # -----------------------------
+    # RUN PLANNER
+    # -----------------------------
     for a in alpha_values:
 
         print("Running alpha =", a)
@@ -97,27 +150,48 @@ def main():
         path = planner.plan(start, goal)
 
         if path is None:
-            print("No path found for alpha =", a)
-            energy_results.append(float('inf'))
+            print("No path found!")
             continue
 
-        print("Path computed")
-
         E = compute_path_energy(path, get_current)
-        print("Energy computed")
 
-        energy_results.append(E)
+        paths.append(path)
+        energies.append(E)
 
         print(f"Alpha {a}: Energy = {E:.2f}")
 
+    # -----------------------------
+    # PLOT PATH COMPARISON
+    # -----------------------------
+    fig, ax = plt.subplots()
 
-    # ----- Plot Results -----
-    plt.figure()
-    plt.plot(alpha_values, energy_results, marker='o')
-    plt.xlabel("Heuristic Weight (alpha)")
-    plt.ylabel("Total Energy (J)")
-    plt.title("Effect of Heuristic Weight on Energy Optimality")
-    plt.grid(True)
+    plot_flow_field(ax, get_current)
+
+    for i, path in enumerate(paths):
+        x = [p[0] for p in path]
+        y = [p[1] for p in path]
+        ax.plot(x, y, marker='o', label=f'α={alpha_values[i]}')
+
+    ax.scatter(start[0], start[1], c='green', s=100, label='Start')
+    ax.scatter(goal[0], goal[1], c='red', s=100, label='Goal')
+
+    ax.set_title("Path Comparison with Ocean Current Field")
+    ax.set_xlabel("X Position")
+    ax.set_ylabel("Y Position")
+    ax.legend()
+    ax.grid()
+
     plt.show()
+
+    # -----------------------------
+    # ANIMATE BEST PATH
+    # -----------------------------
+    best_index = np.argmin(energies)
+    print("\nAnimating best path (lowest energy)...")
+
+    animate_path(paths[best_index])
+
+
+# -------------------------------------------------
 if __name__ == "__main__":
     main()

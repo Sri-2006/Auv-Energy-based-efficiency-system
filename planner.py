@@ -10,7 +10,7 @@ class AStarPlanner:
         self.height = height
         self.get_current = ocean_func
         self.obstacle_map = obstacle_map
-        self.alpha = 1.0  # heuristic weight
+        self.alpha = 10.0  # heuristic weight
 
 
         self.speed = 1.0
@@ -20,8 +20,35 @@ class AStarPlanner:
         self.use_energy = True
 
 
-    def heuristic(self, a, b):
-        return np.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+    def heuristic(self, node, goal):
+
+        dx = goal[0] - node[0]
+        dy = goal[1] - node[1]
+
+        distance = np.hypot(dx, dy)
+
+        if distance == 0:
+            return 0
+
+        # Unit direction toward goal
+        dir_x = dx / distance
+        dir_y = dy / distance
+
+        # Get current at this node
+        u, v = self.get_current(node[0], node[1])
+
+        # Projection of current onto goal direction
+        projection = u * dir_x + v * dir_y
+
+        # Effective velocity (vehicle + helping current)
+        v_vehicle = 1.0  # assumed constant
+        v_eff = v_vehicle + projection
+
+        # Prevent division issues
+        v_eff = max(0.1, v_eff)
+
+    # Final heuristic (time-like or effort-like)
+        return (distance / v_eff) * 100
 
     def get_neighbors(self, node):
         x, y = node
