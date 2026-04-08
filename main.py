@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.animation as animation
-
+import matplotlib
+matplotlib.use('TkAgg')
 from planner import AStarPlanner
 from ocean import get_current, set_strength
 
@@ -31,7 +32,7 @@ def animate_path(path):
 
     fig, ax = plt.subplots()
 
-    # Plot flow field FIRST
+    # Flow field
     plot_flow_field(ax, get_current)
 
     x = [p[0] for p in path]
@@ -40,23 +41,22 @@ def animate_path(path):
     line, = ax.plot([], [], 'b-', linewidth=2)
     point, = ax.plot([], [], 'ro')
 
-    # Start & Goal
     ax.scatter(x[0], y[0], c='green', s=100, label='Start')
     ax.scatter(x[-1], y[-1], c='red', s=100, label='Goal')
 
     ax.set_xlim(0, 50)
     ax.set_ylim(0, 50)
-    ax.set_title("AUV Path Animation with Ocean Currents")
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
+    ax.set_title("AUV Path Animation")
     ax.grid()
     ax.legend()
 
     def update(frame):
         line.set_data(x[:frame+1], y[:frame+1])
-        point.set_data(x[frame], y[frame])
+        point.set_data([x[frame]], [y[frame]])  # IMPORTANT FIX
         return line, point
 
+    # KEY FIX → make animation GLOBAL
+    global ani
     ani = animation.FuncAnimation(
         fig,
         update,
