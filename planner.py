@@ -35,7 +35,8 @@ class AStarPlanner:
         dir_y = dy / distance
 
         # Get current at this node
-        u, v = self.get_current(node[0], node[1])
+        z = 5   # fixed depth for now
+        u, v = self.get_current(node[0], node[1], z)
 
         # Projection of current onto goal direction
         projection = u * dir_x + v * dir_y
@@ -85,7 +86,8 @@ class AStarPlanner:
         v_x = self.speed * np.cos(psi)
         v_y = self.speed * np.sin(psi)
 
-        u_c, v_c = self.get_current(x1, y1)
+        z = 5   # fixed depth for now
+        u_c, v_c = self.get_current(x1, y1, z)
 
         v_rel_x = v_x - u_c
         v_rel_y = v_y - v_c

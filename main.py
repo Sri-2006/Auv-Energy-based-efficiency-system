@@ -1,3 +1,5 @@
+from turtle import width
+
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.animation as animation
@@ -159,6 +161,14 @@ def main():
         energies.append(E)
 
         print(f"Alpha {a}: Energy = {E:.2f}")
+
+        depths = [0, 5, 10, 15]
+
+    for z in depths:
+        print(f"\nRunning at depth z = {z}")
+
+        planner = AStarPlanner(width, height, get_current, obstacle_map)
+        planner.depth = z
 
     # -----------------------------
     # PLOT PATH COMPARISON
