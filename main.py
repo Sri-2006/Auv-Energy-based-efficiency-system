@@ -24,7 +24,7 @@ def plot_flow_field(ax, get_current):
             U[i][j] = u
             V[i][j] = v
 
-    ax.quiver(X, Y, U, V, color='gray', alpha=0.6)
+    ax.quiver(X, Y, U, V, color='gray', alpha=0.5)
 
 
 # -------------------------------------------------
@@ -199,7 +199,7 @@ def main():
     best_index = np.argmin(energies)
     print("\nAnimating best path (lowest energy)...")
 
-    animate_path(paths[best_index])
+    animate_path(paths[1])
 
 
 # -------------------------------------------------
